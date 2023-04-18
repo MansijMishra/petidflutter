@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,6 +18,7 @@ class TakePictureScreen extends StatefulWidget {
   TakePictureScreenState createState() => TakePictureScreenState();
 }
 
+/*
 class TakePictureScreenState extends State<TakePictureScreen> {
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
@@ -26,22 +28,21 @@ class TakePictureScreenState extends State<TakePictureScreen> {
   String results = '';
 
   Future<void> getImage() async {
-    final pickedFile = await imagePicker.pickImage(source: ImageSource.camera);
+    //final picture = await imagePicker.pickImage(source: ImageSource.camera);
 
     setState(() {
-      if (pickedFile != null) {
-        picture = File(pickedFile.path);
+      if (picture != null) {
+        picture = File(picture.path);
       } else {
         print('No image selected.');
       }
     });
-
     var request = http.MultipartRequest(
         'POST',
         Uri.parse(
-            'https://1418-2600-4041-50e2-ac00-e442-8942-17d-d06c.ngrok-free.app/predict'));
+            'https://bc15-2600-4041-50e2-ac00-9022-399d-7b52-4c73.ngrok-free.app/predict'));
     request.files.add(
-        await http.MultipartFile.fromPath('file', pickedFile.path.toString()));
+        await http.MultipartFile.fromPath('file', picture.path.toString()));
 
     http.StreamedResponse response = await request.send();
 
@@ -121,15 +122,16 @@ class TakePictureScreenState extends State<TakePictureScreen> {
             await _initializeControllerFuture;
             picture = await _controller.takePicture();
             if (!mounted) return;
+            await getImage();
             await Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => DisplayPictureScreen(
                   imagePath: picture.path,
                 ),
-
               ),
             );
-          } catch (e) {
+          }
+          catch (e) {
             print(e);
           }
         },
@@ -138,66 +140,13 @@ class TakePictureScreenState extends State<TakePictureScreen> {
     );
   }
 }
-/*
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Take a picture')),
-      // You must wait until the controller is initialized before displaying the
-      // camera preview. Use a FutureBuilder to display a loading spinner until the
-      // controller has finished initializing.
-      body: FutureBuilder<void>(
-        future: _initializeControllerFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            // If the Future is complete, display the preview.
-            return CameraPreview(_controller);
-          } else {
-            // Otherwise, display a loading indicator.
-            return const Center(child: CircularProgressIndicator());
-          }
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        // Provide an onPressed callback.
-        onPressed: () async {
-          // Take the Picture in a try / catch block. If anything goes wrong,
-          // catch the error.
-          try {
-            // Ensure that the camera is initialized.
-            await _initializeControllerFuture;
 
-            // Attempt to take a picture and get the file `image`
-            // where it was saved.
-            final image = await _controller.takePicture();
-
-            if (!mounted) return;
-
-            // If the picture was taken, display it on a new screen.
-            await Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => DisplayPictureScreen(
-                  // Pass the automatically generated path to
-                  // the DisplayPictureScreen widget.
-                  imagePath: image.path,
-                ),
-              ),
-            );
-          } catch (e) {
-            // If an error occurs, log the error to the console.
-            print(e);
-          }
-        },
-        child: const Icon(Icons.camera_alt),
-      ),
-    );
-  }
-}
-*/
 // A widget that displays the picture taken by the user.
 class DisplayPictureScreen extends StatelessWidget {
   final String imagePath;
   const DisplayPictureScreen({super.key, required this.imagePath});
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -205,6 +154,154 @@ class DisplayPictureScreen extends StatelessWidget {
       // The image is stored as a file on the device. Use the `Image.file`
       // constructor with the given path to display the image.
       body: Image.file(File(imagePath)),
+
     );
+  }
+}
+*/
+
+
+class TakePictureScreenState extends State<TakePictureScreen> {
+  late CameraController _controller;
+  late Future<void> _initializeControllerFuture;
+  var imagePicker;
+  var picture;
+
+  Future<String?> getImage() async {
+    //final picture = await imagePicker.pickImage(source: ImageSource.camera);
+
+    setState(() {
+      if (picture != null) {
+        picture = File(picture.path);
+      } else {
+        print('No image selected.');
+      }
+    });
+
+    var request = http.MultipartRequest(
+        'POST',
+        Uri.parse(
+            'https://bc15-2600-4041-50e2-ac00-9022-399d-7b52-4c73.ngrok-free.app/predict'));
+    request.files.add(
+        await http.MultipartFile.fromPath('file', picture.path.toString()));
+
+    http.StreamedResponse response = await request.send();
+
+    if (response.statusCode == 200) {
+      String results = await response.stream.bytesToString();
+      print(results);
+      return results;
+    } else {
+      print(response.reasonPhrase);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // To display the current output from the Camera,
+    // create a CameraController.
+    _controller = CameraController(
+      // Get a specific camera from the list of available cameras.
+      widget.camera,
+      // Define the resolution to use.
+      ResolutionPreset.medium,
+    );
+
+    // Next, initialize the controller. This returns a Future.
+    _initializeControllerFuture = _controller.initialize();
+  }
+
+  @override
+  void dispose() {
+    // Dispose of the controller when the widget is disposed.
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Take a picture')),
+      body: FutureBuilder<void>(
+        future: _initializeControllerFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            return CameraPreview(_controller);
+          } else {
+            return const Center(child: CircularProgressIndicator());
+          }
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          try {
+            await _initializeControllerFuture;
+            picture = await _controller.takePicture();
+            if (!mounted) return;
+
+            String? results = await getImage();
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => DisplayPictureScreen(
+                  imagePath: picture.path,
+                  results: results,
+                ),
+              ),
+            );
+          } catch (e) {
+            print(e);
+          }
+        },
+        child: const Icon(Icons.camera_alt),
+      ),
+    );
+  }
+}
+
+// A widget that displays the picture taken by the user.
+class DisplayPictureScreen extends StatelessWidget {
+  final String imagePath;
+  final String? results;
+
+  const DisplayPictureScreen({
+    super.key,
+    required this.imagePath,
+    required this.results,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(title: const Text('Display the Picture')),
+    body: Column(
+    children: [
+    Expanded(
+    child: Image.file(File(imagePath)),
+    ),
+    results == null
+    ?Container()
+    : Expanded(child: Padding(
+    padding: const EdgeInsets.all(8),
+    child: Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      const Text(
+      "Breed Percentage",
+      style: TextStyle(fontSize: 20),
+    ),
+    const SizedBox(height: 10),
+    Text(results!, style: const TextStyle(fontSize: 16),
+    ),
+    const SizedBox(height: 20),
+    ElevatedButton(onPressed: (){
+      Navigator.pop(context);
+    }
+    , child: const Text('Back'),
+    )
+    ],
+    ),
+    ))],
+    ));
   }
 }

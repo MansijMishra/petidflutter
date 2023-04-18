@@ -40,7 +40,7 @@ class ImageFromGalleryExState extends State<ImageFromGalleryEx> {
     var request = http.MultipartRequest(
         'POST',
         Uri.parse(
-            'https://1418-2600-4041-50e2-ac00-e442-8942-17d-d06c.ngrok-free.app/predict'));
+            'https://bc15-2600-4041-50e2-ac00-9022-399d-7b52-4c73.ngrok-free.app/predict'));
     request.files.add(
         await http.MultipartFile.fromPath('file', pickedFile.path.toString()));
 
